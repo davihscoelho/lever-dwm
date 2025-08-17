@@ -1,0 +1,25 @@
+CREATE OR REPLACE TABLE silver.sheets_cadastro_imoveis AS 
+SELECT
+  CAST(HASH("nome ativo","inscrição") AS VARCHAR) AS ativo_id,
+  "nome ativo",
+  "Display Name" as display_name,
+  "descrição ativo" as descricao_ativo,
+  finalidade,
+  tipo as categoria,
+  "estrategia de risco" as risco_id,
+  "estratégia de liquidez" as liquidez_id,
+  classe as classe_id,
+  moeda as moeda_id,
+  cidade,
+  estado,
+  COALESCE(TRY_CAST(REPLACE(latitude, ',', '.') AS DOUBLE), 0.0)AS latitude,
+  COALESCE(TRY_CAST(REPLACE(longitude, ',', '.') AS DOUBLE), 0.0)AS longitude,
+  iptu,
+  COALESCE(TRY_CAST(REPLACE("custo iptu", ',', '.') AS DOUBLE), 0.0) AS custo_iptu,
+  COALESCE(TRY_CAST(REPLACE("custo condominio", ',', '.') AS DOUBLE), 0.0) AS custo_condominio,
+  "Inscrição",
+  matricula,
+  COALESCE(TRY_CAST(REPLACE("área construção(m2)", ',', '.') AS DOUBLE), 0.0) AS area_construcao,
+  COALESCE(TRY_CAST(REPLACE("área terreno(m2)", ',', '.') AS DOUBLE), 0.0) AS area_terreno,
+  COALESCE(TRY_CAST(REPLACE("valor venal (2024)", ',', '.') AS DOUBLE), 0.0) AS valor_venal
+FROM bronze.sheets_cadastro_imoveis
