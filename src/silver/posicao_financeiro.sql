@@ -5,7 +5,10 @@ select
 	ativo as ativo_id,
 	try_strptime("data", '%m/%y') as date_id,
 	moeda as moeda_id,
-	custodia as custodia_id,
+    CASE 
+        when custodia = 'itaú' THEN 'itau'
+        ELSE custodia
+	END as custodia_id,
 	TRY_CAST(REPLACE(REPLACE(valor, '.', ''), ',', '') AS DOUBLE) AS valor
 from "lever-dwm".bronze.gdrive_posicao_financeiro
 where ativo_id <> ''

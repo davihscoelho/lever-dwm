@@ -3,3 +3,4 @@ config/
 .env
 .ipynb
 __pycache__
+BI/

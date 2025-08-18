@@ -6,7 +6,10 @@ select
 	descricao,
 	natureza,
 	categoria,
-	moeda,
-	custodia,
+	moeda as moeda_id,
+    CASE 
+        when custodia = 'itaú' THEN 'itau'
+        ELSE custodia
+	END as custodia_id,
 	TRY_CAST(REPLACE(REPLACE(valor, '.', ''), ',', '') AS DOUBLE) AS valor
 from "lever-dwm".bronze.gdrive_posicao_despesas

@@ -1,6 +1,6 @@
 CREATE OR REPLACE TABLE silver.gdrive_posicao_movimentacoes AS
 select
-	grupo_familiar as client_id,
+	grupo_familiar as cliente_id,
 	try_strptime(REPLACE("data", 'jun.', '06'), '%m/%y') as date_id,
 	custodia as custodia_id,
 	moeda as moeda_id,
