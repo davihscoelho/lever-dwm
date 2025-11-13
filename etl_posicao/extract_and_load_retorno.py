@@ -1,6 +1,6 @@
 import pandas as pd
 import gspread
-from auxiliar import auth,  extract, clean_column_names, load_to_bigquery, get_table_from_bq, concat_dfs, upsert_dfs
+from auxiliar import *
 
 PIPELINE_CLIENTS = [
     {
@@ -10,23 +10,24 @@ PIPELINE_CLIENTS = [
         "DATASET_ID": "bronze",
         "tasks": [
             {
-                "source_table_id": "posicao_financeiro",           # Nome da Aba no Gsheets
-                "destination_table_id": "gsheets_posicao_financeiro", # Destino BQ
-                "primary_key_cols": ["data_dia_mes_ano", "cliente", "ativo"]
-            }, 
-            {
-                "source_table_id": "posicao_imoveis",           # Nome da Aba no Gsheets
-                "destination_table_id": "gsheets_posicao_imoveis", # Destino BQ 
-                "primary_key_cols": ["cliente", "ativo", "status"]
-            }, 
-            {
-                "source_table_id": "posicao_empresas",           # Nome da Aba no Gsheets
-                "destination_table_id": "gsheets_posicao_empresas", # Destino BQ 
-                "primary_key_cols": ["cliente", "ativo", "status"]
+                "source_table_id": "retorno",           # Nome da Aba no Gsheets
+                "destination_table_id": "gsheets_posicao_retorno", # Destino BQ
+                "primary_key_cols": ["data", "cliente", "moeda"],
+                "COLUNAS_MONETARIAS": ['pl_final', 'pl_inicial', 'aporte', 'resgate', 'net', "retorno_monetario"],
+                "COLUNAS_PERCENTUAIS": ["retorno"]
             }
         ]
     }
 ]
+
+def standardize_numeric_data(df, colunas_monetarias, colunas_percentuais):
+    for col in colunas_monetarias:
+        df[col] = clean_and_convert_to_float(df[col])
+
+    for col in colunas_percentuais:
+        df[col] = clean_and_convert_percentage(df[col])
+    
+    return df
 
 client_gc, client_bq = auth()
 client = PIPELINE_CLIENTS[0]
@@ -39,6 +40,11 @@ for task in client["tasks"]:
     
     df = extract(client_gc, SPREADSHEET_ID, SHEET_NAME)
     df = clean_column_names(df)
+    df = standardize_numeric_data(
+        df, 
+        task["COLUNAS_MONETARIAS"], 
+        task["COLUNAS_PERCENTUAIS"]
+    )
     df_existente = get_table_from_bq(
         client_bq, 
         DATASET_ID, 
@@ -61,9 +67,3 @@ for task in client["tasks"]:
         DATASET_ID, 
         TABLE_ID
     )
-
-
-df["pl_final"] = pd.to_numeric(df["pl_final"], errors='coerce')
-df.head().info()
-df.head().to_dict()
-df.head()

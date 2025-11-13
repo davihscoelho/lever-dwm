@@ -102,5 +102,67 @@ def load_to_bigquery(df, client_bq, DATASET_ID, TABLE_ID):
     except Exception as e:
         print(f"Erro na Carga para BigQuery: {e}")
         return f"Erro na Carga para BigQuery: {e}", 500
+    
+def get_table_from_bq(client_bq, dataset_id, table_id):
+    from google.cloud import bigquery
+    try:
+        table_ref = client_bq.dataset(dataset_id).table(table_id)
+        client_bq.get_table(table_ref)
+        query = f"SELECT * FROM `{table_ref}`"
+        df = client_bq.query(query).to_dataframe(create_bqstorage_client=True)
+        
+        print(f"1.Tabela encontrada. {len(df)} linhas existentes.")    
+        return df
+    
+    except:
+        print(f"⚠️ A tabela '{table_id}' não existe. Retornando DataFrame vazio.")
+        return pd.DataFrame()
 
+def concat_dfs(df1, df2):
+    df3 = pd.concat([df1, df2], ignore_index=True)
+    print(f"3. Concatenação T1+T2 = T3. Total de linhas: {len(df3)}.")
+    return df3
+
+def upsert_dfs(df, primary_key_cols):
+    df_final = df.drop_duplicates(
+        subset=primary_key_cols, 
+        keep='last'  # Mantém a última ocorrência
+    ).reset_index(drop=True)
+
+    print(f"4. Drop Duplicates (T4) concluído. Linhas finais: {len(df_final)}.")
+    return df_final
+
+def clean_and_convert_to_float(series):
+    """
+    Limpa strings no formato numérico brasileiro (separador de milhar: '.', decimal: ',')
+    e as converte para float padrão (separador decimal: '.').
+    """
+    # 1. Converte a Series para tipo string para usar métodos .str
+    # fillna('') é crucial para evitar erros se houver NaN ou None
+    series_str = series.astype(str).str.strip()
+    
+    # 2. Se a string estiver vazia ou for 'None', retorna NaN para evitar erro na conversão
+    series_str = series_str.replace(['None', 'nan', ''], pd.NA, regex=False)
+    
+    # 3. Remove o separador de milhar (ponto)
+    series_cleaned = series_str.str.replace('.', '', regex=False)
+    
+    # 4. Substitui o separador decimal (vírgula) por ponto
+    series_cleaned = series_cleaned.str.replace(',', '.', regex=False)
+    
+    # 5. Converte para float
+    return series_cleaned.astype(float)
+
+def clean_and_convert_percentage(series):
+    """
+    Limpa strings de percentual (ex: '1,50%') e as converte para float (ex: 0.015).
+    """
+    # 1. Usa a função de limpeza padrão para tratar a formatação de vírgula/ponto
+    series_cleaned = series.str.replace('%', '', regex=False)
+    
+    series_cleaned = series_cleaned.str.replace(',', '.', regex=False)
+    
+    series_cleaned = series_cleaned.astype(float)
+    # 2. Divide por 100 para converter o valor percentual para o valor decimal (padrão)
+    return series_cleaned / 100.0
 
